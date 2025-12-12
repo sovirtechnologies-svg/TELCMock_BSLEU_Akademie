@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Waiting — TELC Computer Based Tests</title>
+
+<style>
+  /* ---- Colors & base ---- */
+  :root{
+    --bg:#fff;        /* changed to full white */
+    --navy:#0f2b44;      /* topbar navy */
+    --telc-red:#d71f26;  /* telc red */
+    --text:#222;
+  }
+  html,body{ height:100%; margin:0; font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+
+  /* ---- Top bar ---- */
+  #topbar {
+    width:100%;
+    height:72px;
+    background:var(--navy);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-sizing:border-box;
+    border-bottom:1px solid rgba(0,0,0,0.06);
+    position:fixed;
+    top:0;
+    left:0;
+    z-index:40;
+  }
+
+  /* small red TELC button (top-left) */
+  #telcOpenBtn {
+    position:absolute;
+    left:12px;
+    top:12px;
+    background:var(--telc-red);
+    color:#fff;
+    border:none;
+    padding:15px 15px;
+    border-radius:6px;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    cursor:pointer;
+    font-weight:1000;
+    box-shadow:0 2px 6px rgba(0,0,0,0.12);
+    font-size:24px; 
+  }
+  #telcOpenBtn .telc-square {
+    width:30px; height:30px; border-radius:4px; background:#fff; color:var(--telc-red); display:flex; align-items:center; justify-content:center; font-weight:900; 
+  }
+
+  /* centered title in topbar */
+  #topTitle {
+    color:#fff;
+    font-size:22px;
+    letter-spacing:1px;
+    font-weight:600;
+  }
+
+  /* power/exit icon bottom-right like your photo (small) */
+  #powerBtn {
+    position:fixed;
+    right:16px;
+    bottom:14px;
+    background:transparent;
+    border:none;
+    color:#222;
+    font-size:30px;
+    cursor:pointer;
+    z-index:30;
+    opacity:0.9;
+  }
+
+  /* ---- Main content area ---- */
+  #content {
+    width:100%;
+    box-sizing:border-box;
+    padding:110px 40px 60px; /* leave room for topbar */
+    min-height:calc(100vh - 72px);
+    display:flex;
+    align-items:center; /* align like photo: qr on left, text on right */
+    justify-content:center;
+  }
+    .stage {
+        transform: translateY(40px); /* pushes content lower */
+    }
+
+  /* container that centers the main layout and controls width */
+  .stage {
+    width:100%;
+    max-width:1280px; /* similar to photo proportions */
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:80px;
+  }
+
+  /* LEFT: QR column */
+  .qr-column {
+    flex:0 0 360px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    gap:14px;
+  }
+  .qr-box {
+    width:260px;
+    height:260px;
+    background:#fff;
+    border-radius:6px;
+    padding:14px;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.08);
+    display:flex;
+    align-items:bottom;
+    justify-content:bottom;
+    cursor:pointer;
+  }
+  .qr-box img {
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    display:block;
+  }
+  .qr-caption { font-size:13px; color:#fff; margin-top:6px; }
+
+  /* Sovir branding inside left column */
+  .sovir-brand { display:flex; align-items:center; gap:12px; margin-bottom:6px; }
+  .sovir-logo { width:46px; height:46px; border-radius:8px; background:#0f2b44; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:20px; }
+  .sovir-name { font-weight:800; color:var(--navy); font-size:18px; }
+
+  /* RIGHT: instruction text, centered vertically */
+  .text-column {
+    flex: 1 1 auto;
+    max-width:640px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .instruction { text-align:left; font-weight:700; font-size:22px; line-height:1.5; color:#1f2630; margin:0; }
+  .instruction small { display:block; font-weight:600; font-size:18px; color:#333; margin-top:6px; }
+
+  /* Sovir information panel on right */
+  .sovir-panel { background:#fff; border-radius:10px; padding:22px; box-shadow:0 12px 30px rgba(16,40,60,0.06); width:100%; box-sizing:border-box; }
+  .sovir-panel h2 { margin:0 0 8px 0; color:var(--navy); font-size:20px; }
+  .sovir-panel p { margin:8px 0; color:#333; }
+  .sovir-services { margin:10px 0 0 0; padding-left:18px; }
+  .sovir-services li { margin-bottom:6px; }
+
+  /* ---- Modal login for code entry ---- */
+  #modalOverlay {
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.5);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:60;
+  }
+  #modal {
+    width:360px;
+    background:#fff;
+    padding:26px;
+    border-radius:10px;
+    box-shadow:0 18px 40px rgba(0,0,0,0.25);
+    text-align:center;
+  }
+  #modal h3 { margin:0 0 12px 0; font-size:18px; color:#111; }
+  #codeInput {
+    width:80%;
+    padding:10px 12px;
+    font-size:16px;
+    border-radius:8px;
+    border:1px solid #fff;
+    margin-top:10px;
+  }
+  #verifyBtn {
+    margin-top:16px;
+    background:var(--telc-red);
+    color:#fff;
+    padding:10px 18px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:700;
+  }
+
+  /* ---- Loading overlay (shown after success) ---- */
+  #loadingOverlay {
+    position:fixed;
+    inset:0;
+    background: #fff;
+    display:none;
+    z-index:80;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+  }
+  .spinner {
+    width:72px; height:72px;
+    border-radius:50%;
+    border:8px solid #fff;
+    border-top-color:var(--telc-red);
+    animation:spin 1s linear infinite;
+    margin-bottom:18px;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* ---- Subscription / Terms modal ---- */
+  #subOverlay {
+    position:fixed;
+    inset:0;
+    background:rgba(7,10,17,0.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:90;
+    padding:20px;
+  }
+  .subModal {
+    width:820px;
+    max-width:100%;
+    background: linear-gradient(180deg,#ffffff 0%, #f7fbff 100%);
+    border-radius:12px;
+    padding:24px;
+    box-shadow:0 30px 60px rgba(10,20,40,0.28);
+    color:var(--navy);
+    position:relative;
+    transform:translateY(10px);
+    animation:pop .28s ease;
+  }
+  @keyframes pop { from{opacity:0; transform:translateY(20px) scale(.98)} to{opacity:1; transform:translateY(0) scale(1)} }
+  .subClose { position:absolute; right:12px; top:12px; border:none; background:transparent; font-size:20px; cursor:pointer; color:#666; }
+  .subModal h2 { margin:0; color:var(--navy); font-size:22px; }
+  .plans { display:flex; gap:14px; margin-top:16px; flex-wrap:wrap; }
+  .plan { flex:1 1 240px; background: linear-gradient(180deg,#fff,#fbfdff); border-radius:10px; padding:16px; box-shadow:0 10px 30px rgba(16,40,60,0.06); text-align:center; }
+  .plan h3 { margin:0 0 8px 0; font-size:18px; color:var(--navy); }
+  .price { font-size:20px; font-weight:800; color:var(--telc-red); margin-bottom:6px; }
+  .choosePlan { margin-top:8px; background:var(--telc-red); color:#fff; border:none; padding:10px 12px; border-radius:8px; cursor:pointer; font-weight:700; }
+  .muted { font-weight:600; color:#333; font-size:12px; }
+  .subtext { font-size:13px; color:#444; margin-top:6px; }
+  .powered { font-size:13px; color:#666; margin-top:12px; text-align:left; }
+  .codeBadge { margin-top:10px; display:inline-block; background:#0f2b44; color:#fff; padding:8px 12px; border-radius:8px; font-weight:700; letter-spacing:1px; }
+  .verifyBtn { background:var(--navy); color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; font-weight:700; }
+
+  /* ---- Premium Subscription styles (dark, modern) */
+  #subOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); display:none; align-items:center; justify-content:center; z-index:120; padding:24px; }
+  .subModal.premium { width:100%; max-width:1100px; background:linear-gradient(180deg,#0b0b0c 0%, #121214 100%); color:#fff; border-radius:14px; padding:28px; box-shadow:0 40px 120px rgba(2,6,23,0.8); border:1px solid rgba(255,255,255,0.04); overflow:hidden; }
+  .subClose { position:absolute; right:18px; top:18px; border:none; background:transparent; font-size:20px; cursor:pointer; color:rgba(255,255,255,0.75); }
+  .subHeader { display:flex; flex-direction:column; gap:8px; }
+  .badge { display:inline-block; background:linear-gradient(90deg,#f6c84c,#e89b3d); color:#111; padding:6px 10px; border-radius:8px; font-weight:800; letter-spacing:1px; }
+  .subHeader h2 { margin:0; font-size:22px; color:#fff; }
+  .lead { color:rgba(255,255,255,0.86); margin:0; font-weight:600; }
+
+  .subBody { display:flex; gap:22px; margin-top:18px; }
+  .features { flex:1 1 420px; padding:14px 18px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:10px; border:1px solid rgba(255,255,255,0.03); }
+  .features h3 { margin-top:0; color:#ffdca3; }
+  .features ul { margin:8px 0 0 18px; color:rgba(255,255,255,0.9); }
+  .features li { margin-bottom:8px; font-weight:600; }
+
+  .plansWrap { display:flex; gap:14px; width:420px; flex-direction:column; }
+  .plan.card-dark { padding:16px; border-radius:10px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03); }
+  .planHead { display:flex; justify-content:space-between; align-items:center; }
+  .planTitle { font-size:18px; font-weight:800; color:#ffdca3; }
+  .planPrice { font-size:18px; font-weight:900; color:#fff; }
+  .subsmall { font-size:12px; color:rgba(255,255,255,0.7); font-weight:600; }
+  .planBody { margin-top:10px; color:rgba(255,255,255,0.9); font-weight:600; }
+  .planActions { margin-top:12px; text-align:center; }
+  .choosePlan.primary { background:linear-gradient(90deg,#ffd166,#ff9f1c); border:none; color:#07101a; padding:10px 12px; border-radius:8px; font-weight:800; cursor:pointer; }
+
+  .subFooter { margin-top:18px; display:flex; flex-direction:column; gap:10px; }
+  .contact a { color:#ffdca3; font-weight:700; text-decoration:none; }
+  .verifyBtn { background:transparent; color:#ffdca3; border:1px solid rgba(255,255,255,0.08); padding:10px 14px; border-radius:8px; cursor:pointer; font-weight:700; }
+
+  .subToast { display:inline-block; margin-top:10px; background:rgba(255,255,255,0.04); color:#dfe7f2; padding:8px 12px; border-radius:8px; font-weight:700; text-align:center; opacity:0; transform:translateY(6px); transition:all .24s ease; }
+  .subToast.show { opacity:1; transform:translateY(0); }
+
+  @media (max-width:900px) { .subBody { flex-direction:column; } .plansWrap{ width:100%; } }
+
+  /* ---- Responsive tweaks ---- */
+  @media (max-width:900px) {
+    .stage { flex-direction:column; gap:28px; align-items:center; padding:0 12px; }
+    .qr-column { order:0; }
+    .text-column { order:1; text-align:center; }
+    .instruction { font-size:18px; }
+    .qr-box { width:220px; height:220px; padding:10px; }
+  }
+
+
+  /* ----- Virtual Keyboard ----- */
+    #vKeyboard {
+    margin: 20px auto 10px;
+    width: 260px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    }
+
+    #vKeyboard .key {
+    background: #fff;
+    border: none;
+    padding: 14px;
+    font-size: 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight:700;
+    }
+
+    #vKeyboard .key:active {
+    background:#fff;
+    }
+
+    #vKeyboard .del {
+    background:#ff6666;
+    color:#fff;
+    }
+
+    #vKeyboard .clr {
+    grid-column: span 2;
+    background:#999;
+    color:#fff;
+    }
+
+  /* Compact subscription modal styles */
+  #subOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:120; padding:18px; }
+  .subModal.compact { width:760px; max-width:96%; background:#0f1720; color:#fff; border-radius:12px; padding:18px 20px; box-shadow:0 18px 48px rgba(2,6,23,0.6); position:relative; border:1px solid rgba(255,255,255,0.04); }
+  .subModal.compact .subClose { position:absolute; right:12px; top:10px; border:none; background:transparent; font-size:18px; cursor:pointer; color:rgba(255,255,255,0.85); }
+  .compactHeader { margin-bottom:12px; }
+  .compactHeader .badge { display:inline-block; background:linear-gradient(90deg,#ffd166,#ff9f1c); color:#07101a; padding:6px 8px; border-radius:6px; font-weight:800; font-size:12px; }
+  .compactTitle { margin:8px 0 4px 0; color:#fff; font-size:18px; }
+  .compactLead { margin:0; color:rgba(255,255,255,0.85); font-size:13px; }
+
+  .compactGrid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:12px; }
+  .compactPlan { background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); text-align:center; }
+  .compactPlan .planName { font-size:16px; font-weight:900; color:#ffd166; margin-bottom:6px; }
+  .compactPlan.highlighted { box-shadow:0 8px 30px rgba(255,209,102,0.12); border:1px solid rgba(255,209,102,0.18); transform:translateY(-4px); }
+  .compactPlan .planPrice { font-size:15px; font-weight:800; color:#fff; margin-bottom:6px; }
+  .compactPlan .planBody { font-size:13px; color:rgba(255,255,255,0.9); margin-bottom:10px; }
+  .compactPlan .choosePlan { background:linear-gradient(90deg,#ffd166,#ff9f1c); border:none; color:#07101a; padding:8px 10px; border-radius:8px; font-weight:800; cursor:pointer; }
+
+  .compactFooter { margin-top:12px; display:flex; gap:12px; align-items:center; justify-content:space-between; }
+  .verifyBtn { background:transparent; color:#ffdca3; border:1px solid rgba(255,255,255,0.06); padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:700; }
+  .subToast { display:inline-block; background:rgba(255,255,255,0.02); color:#dfe7f2; padding:8px 12px; border-radius:8px; font-weight:700; text-align:center; opacity:0; transform:translateY(6px); transition:all .24s ease; }
+  .subToast.show { opacity:1; transform:translateY(0); }
+
+  @media (max-width:880px){ .compactGrid{ grid-template-columns:1fr; } .subModal.compact{ padding:16px; } }
+
+</style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <div id="topbar" role="banner" aria-label="TELC top bar">
+    <button id="telcOpenBtn" title="Open code login">
+      
+      <span style="color:#fff; font: weight 1000px;; letter-spacing:0.6px;">telc</span>
+    </button>
+
+    <div id="topTitle" aria-hidden="true">TELC COMPUTER BASED TESTS</div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div id="content" role="main">
+    <div class="stage" role="region" aria-label="Waiting screen">
+
+        <!-- LEFT: Sovir QR and branding -->
+        <div class="qr-column" role="group" aria-label="Sovir QR and branding">
+          <div class="sovir-brand" aria-hidden="false">
+           
+          </div>
+
+          <div class="qr-box" id="qrBox" title="Open sovirtechnologies.in (click)" role="link" aria-label="Open sovirtechnologies.in">
+            <img alt="QR linking to sovirtechnologies.in"
+              src="https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=https://www.sovirtechnologies.in" />
+          </div>
+        </div>
+
+        <!-- RIGHT: Sovir info and instructions -->
+        <div class="text-column" role="group" aria-label="Sovir information">
+          <div class="sovir-panel">
+        
+            <p><strong>Welcome candidates.</strong> 
+            <ul class="sovir-services">
+              <li>Secure exam delivery platforms and proctoring integration</li>
+              <li>Web & mobile application development</li>
+              <li>Cloud hosting, backups and disaster recovery</li>
+              <li>IT support, network setup and managed services</li>
+              <li>Custom integrations, analytics and reporting</li>
+            </ul>
+            <p style="margin-top:12px;">For support or enquiries, visit <a href="https://www.sovirtechnologies.in" target="_blank" rel="noopener">sovirtechnologies.in</a> or contact the invigilator.</p>
+            <p style="font-size:13px; color:#666; margin-top:10px;">This testing session is delivered in partnership between Sovir Technologies LLP and BSLEU Akademie.</p>
+          </div>
+        </div>
+
+      </div>
+  </div>
+
+  <!-- small power icon bottom-right (reload / exit) -->
+  <button id="powerBtn" title="Exit / Refresh" aria-label="Power button" onclick="location.reload()">
+    ⏻
+  </button>
+
+  <!-- COMPACT SUBSCRIPTION POPUP (three-column) -->
+  <div id="subOverlay" aria-hidden="true">
+    <div class="subModal compact">
+      <button id="subCloseBtn" class="subClose" title="Close subscription" aria-label="Close subscription">✕</button>
+
+      <div class="compactHeader">
+        <div class="badge">SUBSCRIPTION</div>
+        <h3 class="compactTitle">Choose a plan</h3>
+        <p class="compactLead">Select a plan and request access. Subscription codes are issued internally and must be entered on the secure entry screen.</p>
+      </div>
+
+      <div class="compactGrid" role="list">
+        <div class="plan compactPlan" data-plan="individual" role="listitem">
+          <div class="planName">Individual</div>
+          <div class="planPrice">₹86 <span class="muted">/ per use</span></div>
+          <div class="planBody">Pay-per-login access for single candidates.</div>
+          <div class="planActions"><button class="choosePlan">Request Access</button></div>
+        </div>
+
+        <div class="plan compactPlan highlighted" data-plan="institute" role="listitem">
+          <div class="planName">Institute</div>
+          <div class="planPrice">₹9,300 <span class="muted">/ month</span></div>
+          <div class="planBody">Monthly or yearly licensing for institutions. Yearly: ₹64,500</div>
+          <div class="planActions"><button class="choosePlan">Request Access</button></div>
+        </div>
+
+        <div class="plan compactPlan" data-plan="lifetime" role="listitem">
+          <div class="planName">Lifetime</div>
+          <div class="planPrice">Contact Sales</div>
+          <div class="planBody">Enterprise lifetime licensing. Contact sales for a tailored quote.</div>
+          <div class="planActions"><button class="choosePlan">Request Access</button></div>
+        </div>
+      </div>
+
+      <div class="compactFooter">
+        <button id="openCodeEntryBtn" class="verifyBtn">Enter Subscription Code</button>
+        <div id="subToast" class="subToast" aria-hidden="true">Request sent. Sales will provide the code internally.</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- CODE LOGIN MODAL -->
+  <!-- CODE LOGIN MODAL WITH VIRTUAL KEYBOARD -->
+    <div id="modalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div id="modal" role="document">
+        <h3>Enter access code</h3>
+
+        <input id="codeInput" type="password" maxlength="8"
+            placeholder="Enter code" aria-label="Access code" readonly />
+
+        <!-- Virtual Keyboard -->
+        <div id="vKeyboard">
+        <button class="key">1</button>
+        <button class="key">2</button>
+        <button class="key">3</button>
+
+        <button class="key">4</button>
+        <button class="key">5</button>
+        <button class="key">6</button>
+
+        <button class="key">7</button>
+        <button class="key">8</button>
+        <button class="key">9</button>
+
+        <button class="key">0</button>
+        <button class="key del">⌫</button>
+        <button class="key clr">Clear</button>
+        </div>
+
+        <button id="verifyBtn" onclick="verifyCode()">Unlock</button>
+    </div>
+    </div>
+
+
+  <!-- LOADING OVERLAY (after correct code) -->
+  <div id="loadingOverlay" aria-hidden="true" style="display:flex;">
+    <div class="spinner" aria-hidden="true"></div>
+    <div style="font-weight:700; font-size:18px; color:#222;">Loading exam — please wait...</div>
+  </div>
+
+<script>
+  // open code modal when TELC button clicked
+  document.getElementById('telcOpenBtn').addEventListener('click', openCodeModal);
+
+  // clicking QR opens Sovir site
+  document.getElementById('qrBox').addEventListener('click', function(){
+    window.open('https://www.sovirtechnologies.in', '_blank');
+  });
+
+  // show modal
+  function openCodeModal(){
+    const overlay = document.getElementById('modalOverlay');
+    overlay.style.display = 'flex';
+    overlay.setAttribute('aria-hidden','false');
+    document.getElementById('codeInput').value = '';
+    setTimeout(()=>document.getElementById('codeInput').focus(),50);
+  }
+
+  // hide modal (internal)
+  function closeCodeModal(){
+    const overlay = document.getElementById('modalOverlay');
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-hidden','true');
+  }
+
+  // verify code and redirect to exam.html after loading spinner
+  function verifyCode(){
+    const val = document.getElementById('codeInput').value.trim();
+    // default code is 1234 — change here if you prefer another code
+    const accessCode = '1234';
+
+    if(val === accessCode){
+      closeCodeModal();
+      // show loading overlay
+      const load = document.getElementById('loadingOverlay');
+      load.style.display = 'flex';
+      load.setAttribute('aria-hidden','false');
+
+      // short delay to show spinner then redirect
+      setTimeout(function(){
+        // redirect to exam.html (file should exist in same folder)
+        window.location.href = 'exam.html';
+      }, 1400);
+    } else {
+      alert('Incorrect code. Please try again.');
+      document.getElementById('codeInput').focus();
+    }
+  }
+
+
+
+  // ---- Virtual Keyboard Logic ----
+    document.querySelectorAll("#vKeyboard .key").forEach(btn => {
+    btn.addEventListener("click", function () {
+        let input = document.getElementById("codeInput");
+
+        if (this.classList.contains("del")) {
+        // delete last character
+        input.value = input.value.slice(0, -1);
+        } 
+        else if (this.classList.contains("clr")) {
+        // clear all
+        input.value = "";
+        }
+        else {
+        // add digit
+        if (input.value.length < 8) {
+            input.value += this.textContent.trim();
+        }
+        }
+    });
+    });
+
+
+  // allow Enter key inside code input to submit
+  document.getElementById('codeInput').addEventListener('keydown', function(e){
+    if(e.key === 'Enter') verifyCode();
+    if(e.key === 'Escape') closeCodeModal();
+  });
+
+  // on load: ensure loading overlay hidden
+  (function init(){
+    document.getElementById('loadingOverlay').style.display = 'none';
+    document.getElementById('modalOverlay').style.display = 'none';
+  })();
+
+  // open subscription modal (sample code auto-filled)
+  document.getElementById('openCodeEntryBtn').addEventListener('click', function(){
+    document.getElementById('subOverlay').style.display = 'none';
+    openCodeModal();
+    document.getElementById('codeInput').value = 'SO1912IR';
+    setTimeout(()=>document.getElementById('codeInput').focus(),50);
+  });
+
+  // close subscription modal
+  document.getElementById('subCloseBtn').addEventListener('click', function(){
+    document.getElementById('subOverlay').style.display = 'none';
+  });
+
+  // Subscription modal logic (updated: premium UI, do NOT reveal code in UI)
+  (function(){
+  const subOverlay = document.getElementById('subOverlay');
+  const subClose = document.getElementById('subCloseBtn');
+  const chooseBtns = document.querySelectorAll('.choosePlan');
+  const openCodeEntryBtn = document.getElementById('openCodeEntryBtn');
+  const toast = document.getElementById('subToast');
+  const SUB_CODE = 'SO1912IR'; // internal only
+
+  function showSubscription(){
+    subOverlay.style.display = 'flex';
+    subOverlay.setAttribute('aria-hidden','false');
+  }
+  function hideSubscription(){
+    subOverlay.style.display = 'none';
+    subOverlay.setAttribute('aria-hidden','true');
+  }
+
+  subClose.addEventListener('click', hideSubscription);
+
+  // Choose plan action: do NOT reveal code. Instead show confirmation and guidance.
+  chooseBtns.forEach(btn => {
+    btn.addEventListener('click', function(){
+      // subtle animation on button
+      btn.disabled = true;
+      btn.textContent = 'Requested';
+      // show toast
+      toast.textContent = 'Access request sent to Sales. The subscription code is issued internally.';
+      toast.classList.add('show');
+      setTimeout(()=>{ toast.classList.remove('show'); btn.disabled = false; btn.textContent = 'Request Access'; }, 3200);
+
+      // optionally prefill an internal flag (no code shown) to indicate request was made
+      sessionStorage.setItem('sub_request_'+this.closest('.plan').dataset.plan || 'requested','1');
+    });
+  });
+
+  // open the standard code-entry modal for entering subscription code
+  openCodeEntryBtn.addEventListener('click', function(){
+    hideSubscription();
+    openCodeModal();
+  });
+
+  // preserve existing validation behavior — no changes here: SUB_CODE is kept internal
+  function isValidated(){ return sessionStorage.getItem('sub_validated') === '1'; }
+
+  // override verifyCode to also accept subscription code (kept internal)
+  const originalVerify = window.verifyCode;
+  window.verifyCode = function(){
+    const val = document.getElementById('codeInput').value.trim();
+    const accessCode = '1234';
+    const subcode = SUB_CODE;
+
+    if(val === accessCode || val === subcode){
+      if(val === subcode) {
+        sessionStorage.setItem('sub_validated','1');
+        // stop the subscription interval if running
+        if(window.__subIntervalId) { clearInterval(window.__subIntervalId); window.__subIntervalId = null; }
+      }
+      closeCodeModal();
+      const load = document.getElementById('loadingOverlay');
+      load.style.display = 'flex';
+      load.setAttribute('aria-hidden','false');
+      setTimeout(function(){ window.location.href = 'exam.html'; }, 1400);
+    } else {
+      alert('Incorrect code. Please try again.');
+      document.getElementById('codeInput').focus();
+    }
+  };
+
+  // every 30 seconds show subscription popup; show immediately first time
+  const INTERVAL_MS = 30 * 1000; // 30 seconds
+  function startTimer(){
+    // show immediately
+    showSubscription();
+    // ensure previous interval cleared
+    if(window.__subIntervalId) clearInterval(window.__subIntervalId);
+    window.__subIntervalId = setInterval(function(){ if(!sessionStorage.getItem('sub_validated')) showSubscription(); }, INTERVAL_MS);
+  }
+
+  window.addEventListener('load', function(){ if(!isValidated()){ setTimeout(showSubscription, 600); startTimer(); } });
+
+})();
+</script>
+</body>
+</html>

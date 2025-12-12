@@ -1,0 +1,1129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>BSLEU Exam Portal</title>
+<style>
+  /* --- (your original CSS unchanged) --- */
+  :root{ --bg:#f4f7fa; --card:#fff; --accent:#007bff; --accent-hover:#0069d9; --secondary:#6c757d; --border:#e9ecef; --shadow-light:rgba(0,0,0,0.05); --shadow-medium:rgba(0,0,0,0.1); }
+  body{ margin:0; font-family:'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif; background:var(--bg); color:#343a40; min-height:100vh; }
+  header{ background:var(--card); border-bottom:1px solid var(--border); padding:16px 40px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 4px var(--shadow-light); }
+  .logo{ font-weight:700; font-size:1.5rem; color:var(--accent); }
+  .muted{ color:var(--secondary); font-size:0.85rem; }
+  .small{ font-size:0.8rem; }
+  .center{ display:flex; align-items:center; justify-content:center; }
+  main{ width:100%; max-width:1400px; margin:30px auto; padding:0 40px; box-sizing:border-box; }
+  .card{ background:var(--card); border-radius:12px; padding:25px; box-shadow:0 4px 12px var(--shadow-light); transition:box-shadow 0.3s ease; }
+  .card:hover{ box-shadow:0 6px 16px var(--shadow-medium); }
+  button{ padding:10px 18px; border-radius:8px; border:none; cursor:pointer; font-weight:600; transition:background-color 0.3s ease, opacity 0.3s ease; background-color:var(--accent); color:#fff; }
+  button:hover:not(:disabled){ background-color:var(--accent-hover); }
+  button:disabled, .locked button{ opacity:0.6; cursor:not-allowed; }
+  input[type="text"], input[type="password"], textarea{ width:100%; padding:12px; margin:8px 0; border-radius:8px; border:1px solid var(--border); box-sizing:border-box; font-size:1rem; }
+  textarea{ min-height:250px; resize:vertical; }
+  .grid-3{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:25px; margin-top:25px !important; }
+  .exam-box{ padding:30px; border-radius:12px; text-align:center; cursor:pointer; border:1px solid var(--border); background:var(--card); transition:transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; }
+  .exam-box:not(.locked):hover{ transform:translateY(-5px); box-shadow:0 10px 20px rgba(0,123,255,0.15); border-color:var(--accent); }
+  .exam-box h4{ color:var(--accent); margin-top:0; font-size:1.4rem; }
+  .exam-box.locked{ opacity:0.45; cursor:not-allowed; background:#f8f9fa; box-shadow:none; }
+  .split{ display:flex; gap:20px; min-height:500px; align-items:stretch; }
+  .left{ flex:1; padding:25px; background:var(--card); overflow:auto; max-height:calc(100vh - 220px); box-sizing:border-box; }
+  .right{ width:380px; padding:25px; background:#f8f9fa; border:1px solid var(--border); overflow:auto; max-height:calc(100vh - 220px); box-sizing:border-box; }
+  @media (max-width:900px){ .split{ flex-direction:column; min-height:auto; } .right{ width:auto; } .left,.right{ max-height:none; } main{ padding:0 20px; } header{ padding:12px 20px; } }
+  .tabs{ display:flex; gap:12px; justify-content:flex-start; margin-bottom:20px; flex-wrap:wrap; }
+  .tab{ padding:10px 15px; border-radius:20px; border:1px solid var(--border); background:#f8f9fa; color:#343a40; cursor:pointer; font-weight:500; }
+  .tab.active{ background:var(--accent); color:#fff; border-color:var(--accent); box-shadow:0 2px 4px rgba(0,123,255,0.3); }
+  .timer{ font-weight:700; color:#dc3545; font-size:1.5rem; }
+  .drop-target, .draggable{ border-radius:6px; }
+  .drop-target{ border:2px dashed #adb5bd; padding:10px; min-height:48px; background:#fff; margin-bottom:5px; display:block; }
+  .draggable{ padding:10px 12px; background:#e9f5ff; border:1px solid #cce5ff; margin:6px 0; cursor:grab; font-size:0.9rem; box-shadow:0 1px 3px var(--shadow-light); }
+  .inline-drop{ display:inline-block; min-width:140px; border-bottom:2px dashed #adb5bd; padding:6px 8px; vertical-align:middle; margin:0 6px; min-height:28px; box-sizing:border-box; cursor:pointer; background:rgba(255,255,255,0.9); }
+  .inline-drop:empty::before{ content: '[drop]'; color:#6c757d; font-size:0.95rem; }
+  .tf-option{ padding:6px 10px; border:2px solid #0055ff; border-radius:8px; background:white; color:#0055ff; cursor:pointer; font-weight:600; margin:6px 0; width:100%; text-align:center; }
+  .tf-option.selected{ background:#0055ff; color:#fff; }
+  .listening-container{ display:block !important; width:100% !important; }
+  footer{ padding:20px; margin-top:40px !important; border-top:1px solid var(--border); }
+  .hidden{ display:none !important; }
+  /* audio bar fixed at bottom of exam */
+  #audioBar{ position:fixed; left:0; right:0; bottom:0; background:rgba(255,255,255,0.98); border-top:1px solid var(--border); padding:10px 20px; display:flex; gap:16px; align-items:center; z-index:999; box-shadow:0 -6px 18px rgba(0,0,0,0.06); }
+  #audioBar .muted{ margin:0; }
+  #audioBar.hidden{ display:none !important; }
+  #leftPanel, #rightPanel{ transition: all 0.15s ease; }
+  /* Compact listening options: show True/False as small inline pills */
+  .listen-options {
+    display: flex !important;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+    width: 180px;              /* width of options column; adjust as needed */
+    flex-shrink: 0;
+  }
+
+  /* Override the general tf-option only for listening area */
+  .listen-options .tf-option {
+    width: auto !important;    /* do not be full width in listening */
+    padding: 6px 12px !important;
+    border-radius: 18px !important;
+    margin: 0 !important;
+    font-size: 14px !important;
+    min-width: 72px;
+    box-sizing: border-box;
+    text-align: center;
+  }
+
+  /* keep selected state */
+  .listen-options .tf-option.selected {
+    background: #0055ff !important;
+    color: #fff !important;
+    border-color: #0055ff !important;
+  }
+
+  /* Compact subscription modal styles (exam) */
+  #subOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:120; padding:18px; }
+  .subModal.compact { width:760px; max-width:96%; background:#0f1720; color:#fff; border-radius:12px; padding:18px 20px; box-shadow:0 18px 48px rgba(2,6,23,0.6); position:relative; border:1px solid rgba(255,255,255,0.04); }
+  .subModal.compact .subClose { position:absolute; right:12px; top:10px; border:none; background:transparent; font-size:18px; cursor:pointer; color:rgba(255,255,255,0.85); }
+  .compactHeader { margin-bottom:12px; }
+  .compactHeader .badge { display:inline-block; background:linear-gradient(90deg,#ffd166,#ff9f1c); color:#07101a; padding:6px 8px; border-radius:6px; font-weight:800; font-size:12px; }
+  .compactTitle { margin:8px 0 4px 0; color:#fff; font-size:18px; }
+  .compactLead { margin:0; color:rgba(255,255,255,0.85); font-size:13px; }
+  .compactGrid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:12px; }
+  .compactPlan { background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); text-align:center; }
+  .compactPlan .planName { font-size:16px; font-weight:900; color:#ffd166; margin-bottom:6px; }
+  .compactPlan.highlighted { box-shadow:0 8px 30px rgba(255,209,102,0.12); border:1px solid rgba(255,209,102,0.18); transform:translateY(-4px); }
+  .compactPlan .planPrice { font-size:15px; font-weight:800; color:#fff; margin-bottom:6px; }
+  .compactPlan .planBody { font-size:13px; color:rgba(255,255,255,0.9); margin-bottom:10px; }
+  .compactPlan .choosePlan { background:linear-gradient(90deg,#ffd166,#ff9f1c); border:none; color:#07101a; padding:8px 10px; border-radius:8px; font-weight:800; cursor:pointer; }
+  .compactFooter { margin-top:12px; display:flex; gap:12px; align-items:center; justify-content:space-between; }
+  .verifyBtn { background:transparent; color:#ffdca3; border:1px solid rgba(255,255,255,0.06); padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:700; }
+  .subToast { display:inline-block; background:rgba(255,255,255,0.02); color:#dfe7f2; padding:8px 12px; border-radius:8px; font-weight:700; text-align:center; opacity:0; transform:translateY(6px); transition:all .24s ease; }
+  .subToast.show { opacity:1; transform:translateY(0); }
+  @media (max-width:880px){ .compactGrid{ grid-template-columns:1fr; } .subModal.compact{ padding:16px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">BSLEU Akademie LLP</div>
+  <div id="headerRight" class="muted">Not logged</div>
+</header>
+
+<main>
+  <section id="page-login" class="card" style="max-width:480px;margin:30px auto">
+    <h2>🔑 Candidate Login</h2>
+    <input id="email" placeholder="Email" type="text"/>
+    <input id="password" placeholder="Password" type="password"/>
+    <div style="display:flex;gap:12px;align-items:center;margin-top:10px">
+      <button id="btnLogin">Login</button>
+      <div id="loginMsg" class="muted"></div>
+    </div>
+  </section>
+
+  <section id="page-home" class="card hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h1>👋 Hello, <span id="candidateName">Candidate</span></h1>
+      <div><button id="btnLogout" style="background-color: var(--secondary);">Logout</button></div>
+    </div>
+
+    <h2 style="margin-top: 30px; border-bottom: 2px solid var(--border); padding-bottom: 10px;">Exam Modules</h2>
+
+    <div class="grid-3">
+      <div id="box-reading" class="exam-box">
+        <h4>📖 Lessen</h4>
+        <p class="muted">90 minutes to complete.</p>
+        <button>Start Reading</button>
+      </div>
+      <div id="box-listening" class="exam-box locked">
+        <h4>🎧 Hören</h4>
+        <p class="muted">30 minutes to complete. (Locked)</p>
+        <button disabled>Start Listening</button>
+      </div>
+      <div id="box-writing" class="exam-box locked">
+        <h4>✍️ Schreiben</h4>
+        <p class="muted">30 minutes to complete. (Locked)</p>
+        <button disabled>Start Writing</button>
+      </div>
+    </div>
+
+    <div style="margin-top:30px; padding-top:20px; border-top: 1px solid var(--border);">
+      <label class="muted">Audio test (Ensure this plays before Listening)</label><br/>
+      <audio id="audioTest" controls style="width: 100%; max-width: 400px; margin-top: 8px;" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
+      <button id="playAudioBtn" style="display:none; padding:10px; margin-top:10px;">▶ Play Audio</button>
+    </div>
+    <div id="assignedPaperInfo" style="margin-top:12px;" class="muted"></div>
+  </section>
+
+  <section id="page-exam" class="card hidden" style="padding-bottom:70px"> <!-- extra bottom padding for audio bar -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div class="tabs" id="moduleTabs"></div>
+      <div>Time Left: <span id="timerLabel" class="timer">--:--</span></div>
+    </div>
+
+    <div class="split">
+      <div class="left card" id="leftPanel" style="padding: 20px; border: none; box-shadow: none;"></div>
+      <div class="right card" id="rightPanel" style="padding: 20px;"></div>
+    </div>
+
+    <div style="margin-top:20px;display:flex;justify-content:space-between;align-items:center">
+      <div id="statusLine" class="muted">Status: ready</div>
+      <div><button id="btnSubmit">Submit Module</button></div>
+    </div>
+  </section>
+
+  <footer class="muted center">Open Version - SoVir Technologies LLP </footer>
+</main>
+
+<!-- Audio bar (visible when paper has audio and/or listening module active) -->
+<div id="audioBar" class="hidden">
+  <div class="muted" id="audioLabel">Listening audio</div>
+  <audio id="listeningAudioVisible" controls style="width:100%; max-width:900px;"></audio>
+  <div style="min-width:120px; display:flex; gap:8px; align-items:center;">
+    <button id="audioPlayBtn"></button>
+    <button id="audioPauseBtn" style="background-color:var(--secondary)"></button>
+  </div>
+</div>
+
+<!-- Compact subscription popup for exam.html (small, three-column) -->
+<div id="subOverlay" aria-hidden="true" style="display:none;">
+  <div class="subModal compact">
+    <button id="subCloseBtn" class="subClose" title="Close subscription">✕</button>
+    <div class="compactHeader">
+      <div class="badge">SUBSCRIPTION</div>
+      <h3 class="compactTitle">Choose a plan</h3>
+      <p class="compactLead">Select a plan and request access. Subscription codes are issued internally and must be entered to unlock the interface.</p>
+    </div>
+
+    <div class="compactGrid" role="list">
+      <div class="plan compactPlan" data-plan="individual" role="listitem">
+        <div class="planName">Individual</div>
+        <div class="planPrice">₹86 <span class="muted">/ per use</span></div>
+        <div class="planBody">Pay-per-login access for single candidates.</div>
+        <div class="planActions"><button class="choosePlan">Request Access</button></div>
+      </div>
+
+      <div class="plan compactPlan highlighted" data-plan="institute" role="listitem">
+        <div class="planName">Institute</div>
+        <div class="planPrice">₹9,300 <span class="muted">/ month</span></div>
+        <div class="planBody">Monthly or yearly licensing for institutions. Yearly: ₹64,500</div>
+        <div class="planActions"><button class="choosePlan">Request Access</button></div>
+      </div>
+
+      <div class="plan compactPlan" data-plan="lifetime" role="listitem">
+        <div class="planName">Lifetime</div>
+        <div class="planPrice">Contact Sales</div>
+        <div class="planBody">Enterprise lifetime licensing. Contact sales for a tailored quote.</div>
+        <div class="planActions"><button class="choosePlan">Request Access</button></div>
+      </div>
+    </div>
+
+    <div class="compactFooter">
+      <div style="display:flex;gap:12px;align-items:center;">
+        <button id="enterSubCodeBtn" class="verifyBtn">Enter Subscription Code</button>
+        <div id="inlineCodeEntry" style="display:none; align-items:center; gap:8px;">
+          <input id="inlineCodeInput" type="password" placeholder="Enter code" style="padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#fff;" />
+          <button id="inlineVerifyBtn" class="choosePlan" style="padding:8px 10px;">Verify</button>
+        </div>
+      </div>
+      <div id="subToast" class="subToast" aria-hidden="true">Request sent. Sales will provide the code internally.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================
+   CONFIG — set your Apps Script Web App URL here
+   Replace with your deployed Apps Script /exec URL
+   ============================ */
+const BASE_API = "https://script.google.com/macros/s/AKfycbxLarLwX7sa4FMaaZKY-TorgVNn0MPVYcNWfagl_LHcQfUqBHW_dcdXJlTKESHwKAw/exec";
+const DEMO = !BASE_API || BASE_API.trim() === '';
+
+/* ---------- DOM helper ---------- */
+const $id = id => document.getElementById(id);
+
+/* ---------- App state ---------- */
+const state = {
+  email: null,
+  full_name: null,
+  token: null,
+  assignedPaper: null,
+  paperQuestions: [],
+  currentModule: null,
+  moduleEnd: null,
+  timerInterval: null,
+  saveQueue: [],
+  chosenWriting: null,
+  savedResponses: {} // key: module|teil|qid  => answer
+};
+
+let CURRENT_AUDIO_URL = "";
+
+/* ============================
+   API helper
+   ============================ */
+async function api(action, payload = {}) {
+  if (DEMO) return mockApi(action, payload);
+
+  const params = new URLSearchParams();
+  params.append('action', action);
+  for (const k in payload) {
+    if (payload[k] === undefined || payload[k] === null) continue;
+    params.append(k, typeof payload[k] === 'object' ? JSON.stringify(payload[k]) : String(payload[k]));
+  }
+
+  try {
+    const res = await fetch(BASE_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString()
+    });
+    const txt = await res.text();
+    try { return JSON.parse(txt); } catch (e) { return { ok:false, error:'Invalid JSON from server', raw: txt }; }
+  } catch (err) { return { ok:false, error: String(err) }; }
+}
+
+/* ============================
+   DEMO API (basic)
+   ============================ */
+function mockApi(action, payload) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      switch (action) {
+        case 'auth/login':
+          if ((payload.email === 'demo@bsleu.test' && payload.password === 'demo') || (payload.email && payload.email.endsWith('@test'))) {
+            resolve({ ok: true, candidate_id: payload.email, full_name: payload.email.split('@')[0], token: 'demo-token' });
+          } else resolve({ ok: false, error: 'Invalid demo credentials' });
+          break;
+        case 'assignment/get':
+          resolve({ ok:true, paper_id: 'paper1' });
+          break;
+        case 'papers/get':
+          resolve({ ok:true, questions: [
+            { teil: 1, qid: 'R1Q1', qtype: 'drag', prompt: 'Passage A: Short text A', options: ['Opt1','Opt2','Opt3'] },
+            { teil: 1, qid: 'R1Q2', qtype: 'drag', prompt: 'Passage B: Short text B', options: ['Opt4','Opt5','Opt6'] },
+            { teil: 2, qid: 'R2Q1', qtype: 'mcq', prompt: 'One big passage question', options: ['A','B','C'] },
+            { teil: 3, qid: 'R3Q1', qtype: 'drag', prompt: 'Label A: short text', options: ['X','Y','Z'] },
+            { teil: 4, qid: 'R4Q1', qtype: 'blank', prompt: 'I ___ to school.', options: ['go','went'] },
+            { teil: 5, qid: 'R5Q1', qtype: 'blank', prompt: 'She ___ early.', options: ['arrives','arrived'] },
+            { teil: 'listening_1', qid: 'L1Q1', qtype: 'tf', prompt: 'Statement 1' },
+            { teil: 'writing', qid: 'W1', qtype: 'writing', prompt: 'Write an email to a colleague.' }
+          ], audio_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' });
+          break;
+        case 'responses/get':
+          resolve({ ok:true, responses: [] });
+          break;
+        case 'session/start':
+          const mins = payload.module === 'reading' ? 90 : 30;
+          resolve({ ok: true, endsAt: new Date(Date.now() + mins*60000).toISOString() });
+          break;
+        case 'response/save':
+        case 'module/submit':
+        case 'scores/get':
+          resolve({ ok: true });
+          break;
+        default:
+          resolve({ ok:true });
+      }
+    }, 200);
+  });
+}
+
+/* ============================
+   LOGIN / LOGOUT (FIXED)
+   ============================ */
+
+$id('btnLogin').addEventListener('click', async () => {
+  const email = $id('email').value.trim();
+  const password = $id('password').value;
+  $id('loginMsg').textContent = '';
+
+  if (!email || !password) {
+    $id('loginMsg').textContent = 'Enter email & password';
+    return;
+  }
+
+  const btn = $id('btnLogin');
+  const orig = btn.textContent;
+  btn.textContent = 'Logging in...';
+  btn.disabled = true;
+
+  // send both email and password
+  const res = await api('auth/login', { email, password });
+
+  btn.textContent = orig;
+  btn.disabled = false;
+
+  if (!res || !res.ok) {
+    $id('loginMsg').textContent = res?.error || 'Login failed';
+    return;
+  }
+
+  // success handling...
+  state.email = res.email;
+  state.full_name = res.name || res.full_name || (res.email && res.email.split('@')[0]) || "Student";
+  $id('headerRight').textContent = state.full_name;
+
+  // Load assigned paper
+  const a = await api('assignment/get', { email: state.email });
+  if (a.ok && a.paper_id) {
+    state.assignedPaper = a.paper_id;
+    $id('assignedPaperInfo').textContent = `Assigned paper: ${a.paper_id}`;
+
+    // Load questions
+    const p = await api('papers/get', { paper_id: a.paper_id });
+    if (p.ok) {
+      state.paperQuestions = p.questions || [];
+      CURRENT_AUDIO_URL = p.audio_url || "";
+      setupAudioBar(CURRENT_AUDIO_URL);
+    }
+
+    // Load saved answers
+    await loadSavedResponses();
+
+  } else {
+    $id('assignedPaperInfo').textContent = 'No paper assigned (contact admin)';
+  }
+
+  // Load scores (also unlocks modules)
+  await refreshScores();
+
+  // Show dashboard
+  showHome();
+});
+
+
+$id('btnLogout').addEventListener('click', () => location.reload());
+
+
+/* ============================
+   PAGE NAV helpers
+   ============================ */
+function showHome() {
+  $id('page-login').classList.add('hidden');
+  if ($id('page-exam')) $id('page-exam').classList.add('hidden');
+  $id('page-home').classList.remove('hidden');
+  hideAudioBarIfNotNeeded();
+}
+function showExam() {
+  $id('page-login').classList.add('hidden');
+  $id('page-home').classList.add('hidden');
+  $id('page-exam').classList.remove('hidden');
+  // show audio bar if audio exists
+  if (CURRENT_AUDIO_URL) showAudioBar();
+}
+
+/* ============================
+   MODULE START / LOCKS
+   ============================ */
+$id('box-reading').addEventListener('click', () => startModule('reading'));
+$id('box-listening').addEventListener('click', () => startModule('listening'));
+$id('box-writing').addEventListener('click', () => startModule('writing'));
+
+async function startModule(module) {
+  if (!state.email) return alert('Login first');
+
+  if (module === 'listening' && $id('box-listening').classList.contains('locked')) return alert('Complete Reading first');
+  if (module === 'writing' && $id('box-writing').classList.contains('locked')) return alert('Complete Listening first');
+
+  if (!state.assignedPaper) {
+    const a = await api('assignment/get', { email: state.email });
+    if (a.ok && a.paper_id) state.assignedPaper = a.paper_id;
+    else return alert('No paper assigned to you.');
+  }
+
+  const r = await api('session/start', { email: state.email, module, paper_id: state.assignedPaper });
+  if (!r.ok) return alert(r.error || 'Could not start session');
+
+  state.currentModule = module;
+  state.moduleEnd = new Date(r.endsAt);
+  buildModuleTabs(module);
+  showExam();
+  startTimer();
+
+  // If listening, ensure the audio bar is visible and plays
+  if (module === 'listening') {
+    setupAudioBar(CURRENT_AUDIO_URL);
+    playListeningAudio(CURRENT_AUDIO_URL);
+  } else {
+    // show audio bar only if audio exists (but don't autoplay)
+    if (CURRENT_AUDIO_URL) showAudioBar();
+  }
+}
+
+/* ============================
+   TIMER & AUTO-SUBMIT
+   ============================ */
+function startTimer() {
+  clearInterval(state.timerInterval);
+  updateTimerUI();
+  state.timerInterval = setInterval(updateTimerUI, 1000);
+}
+function updateTimerUI() {
+  if (!state.moduleEnd) return;
+  const diff = Math.floor((state.moduleEnd - new Date()) / 1000);
+  if (diff <= 0) {
+    $id('timerLabel').textContent = '00:00';
+    clearInterval(state.timerInterval);
+    onTimeUp();
+    return;
+  }
+  const m = Math.floor(diff / 60), s = diff % 60;
+  $id('timerLabel').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+async function onTimeUp() {
+  $id('statusLine').textContent = 'Time up — submitting...';
+  await flushQueue();
+  await api('module/submit', { email: state.email, module: state.currentModule, paper_id: state.assignedPaper });
+  alert('Submitted due to timeout');
+  showHome();
+  await refreshScores();
+}
+
+/* ============================
+   SAVE QUEUE + RESPONSES GET
+   ============================ */
+async function queueSave(payload) {
+  // keep local savedResponses updated immediately
+  const key = makeKey(payload.module, payload.teil || payload.teil === 0 ? payload.teil : (payload.teil || ''), payload.qid || payload.question_id || '');
+  state.savedResponses[key] = payload.answer || '';
+  state.saveQueue.push(payload);
+  try { await flushQueue(); } catch (e) { console.warn('Queued locally'); }
+}
+async function flushQueue() {
+  while (state.saveQueue.length) {
+    const pkt = state.saveQueue[0];
+    try {
+      // send payload inside data to keep params compact and avoid preflight
+      const payload = { data: JSON.stringify(Object.assign({ email: state.email, paper_id: state.assignedPaper }, pkt)) };
+      const r = await api('response/save', payload);
+      if (r.ok) state.saveQueue.shift();
+      else throw new Error('Save failed');
+    } catch (err) {
+      console.warn('Flush failed', err);
+      throw err;
+    }
+  }
+}
+
+function makeKey(module, teil, qid) {
+  // normalize undefined/null
+  const t = (teil === undefined || teil === null) ? '' : String(teil);
+  return `${String(module)}|${t}|${String(qid)}`;
+}
+
+// load previously saved responses for this candidate & paper
+async function loadSavedResponses() {
+  if (!state.email || !state.assignedPaper) return;
+  try {
+    const r = await api('responses/get', { email: state.email, paper_id: state.assignedPaper });
+    if (!r.ok) { console.warn('Could not load saved responses', r.error); return; }
+    state.savedResponses = {}; // reset
+    (r.responses || []).forEach(rr => {
+      const k = makeKey(rr.module, rr.teil, rr.qid);
+      state.savedResponses[k] = rr.answer;
+    });
+  } catch (e) { console.warn('loadSavedResponses error', e); }
+}
+
+/* ============================
+   MODULE / UI BUILDERS (updates)
+   ============================ */
+function buildModuleTabs(module) {
+  const tabs = $id('moduleTabs'); tabs.innerHTML = '';
+  if (module === 'reading') {
+    ['Teil 1','Teil 2','Teil 3','Teil 4','Teil 5'].forEach((t,i)=> {
+      const btn = document.createElement('button'); btn.className='tab'; btn.textContent = t;
+      btn.addEventListener('click', ()=> { document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); renderReadingTeil(i+1); });
+      tabs.appendChild(btn);
+      if (i===0) { btn.classList.add('active'); renderReadingTeil(1); }
+    });
+  } else if (module === 'listening') {
+    ['Teil 1','Teil 2','Teil 3'].forEach((t,i)=> {
+      const btn = document.createElement('button'); btn.className='tab'; btn.textContent = t;
+      btn.addEventListener('click', ()=> { document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); renderListeningTeil(i+1); });
+      tabs.appendChild(btn);
+      if (i===0) { btn.classList.add('active'); renderListeningTeil(1); }
+    });
+  } else if (module === 'writing') {
+    const btn = document.createElement('button'); btn.className='tab active'; btn.textContent='Schreiben'; tabs.appendChild(btn);
+    renderWriting();
+  }
+}
+
+// IMPORTANT FIX: don't include listening_* questions in reading teils
+function questionsForTeil(teil) {
+  if (state.currentModule === 'listening') {
+    // only listening_{n}
+    return state.paperQuestions.filter(q => String(q.teil).toLowerCase() === ('listening_' + String(teil)));
+  } else {
+    // only numeric/string match for the teil (reading)
+    return state.paperQuestions.filter(q => String(q.teil) === String(teil));
+  }
+}
+
+/* ---------- READING TEILS (with persistence) ---------- */
+
+function renderReadingTeil(n) {
+  if (n===1) renderReadingTeil1();
+  else if (n===2) renderReadingTeil2();
+  else if (n===3) renderReadingTeil3();
+  else if (n===4) renderReadingBlanks(4);
+  else if (n===5) renderReadingBlanks(5);
+}
+
+async function renderReadingTeil1(){
+  const left = $id('leftPanel'), right = $id('rightPanel'); left.innerHTML=''; right.innerHTML='';
+  left.innerHTML = '<h3>Teil 1 — Match options to passages</h3>';
+  const qs = questionsForTeil(1);
+
+  // Build options list first from unique values
+  let options = [];
+  qs.forEach(q=>{ if (Array.isArray(q.options)) options = options.concat(q.options); });
+  if (options.length===0) for (let i=1;i<=10;i++) options.push('Option '+i);
+  options = Array.from(new Set(options));
+
+  // Build an options container (will contain draggable items)
+  right.innerHTML = '<h4>Available Options</h4><div id="options1"></div>';
+  const optsDiv = $id('options1');
+
+  // Create draggable elements for every option (id will be unique)
+  options.forEach((opt, idx) => {
+    const d = document.createElement('div');
+    d.className='draggable';
+    d.id='opt1_'+idx+'_'+Date.now(); // ensure unique
+    d.draggable=true;
+    d.textContent=opt;
+    d.dataset.value=opt;
+    d.addEventListener('dragstart', e=> e.dataTransfer.setData('text/plain', d.id));
+    optsDiv.appendChild(d);
+  });
+
+  // Render passages with inline drop spans, and place saved answer draggables if present
+  qs.forEach(q => {
+    const p = document.createElement('div'); p.style.marginBottom='15px';
+    const promptText = q.prompt || '';
+    let promptHtml = '';
+    if (promptText.indexOf('___') >= 0) {
+      promptHtml = promptText.replace(/___/g, `<span class="inline-drop" id="drop_${q.qid}" data-qid="${q.qid}" data-teil="1"></span>`);
+    } else {
+      promptHtml = `<span class="inline-drop" id="drop_${q.qid}" data-qid="${q.qid}" data-teil="1"></span>${promptText}`;
+    }
+    p.innerHTML = promptHtml;
+    left.appendChild(p);
+
+    const dt = p.querySelector('.inline-drop');
+    if (dt) {
+      dt.addEventListener('dragover', e => e.preventDefault());
+      dt.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        const id = e.dataTransfer.getData('text/plain');
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        // return existing if present
+        if (dt.firstChild && dt.firstChild !== el) {
+          optsDiv.appendChild(dt.firstChild);
+        }
+
+        dt.innerHTML = '';
+        dt.appendChild(el);
+
+        // save answer
+        const ans = el.dataset.value || el.textContent;
+        await queueSave({ module:'reading', teil:1, qid: q.qid, answer: ans });
+      });
+
+      // If previously saved answer exists, move that option into drop
+      const saved = state.savedResponses[makeKey('reading',1,q.qid)];
+      if (saved) {
+        // find a matching draggable in optionsDiv
+        const candidate = Array.from(optsDiv.children).find(ch => ch.dataset.value === saved || ch.textContent === saved);
+        if (candidate) {
+          dt.appendChild(candidate);
+        } else {
+          // if not found, create a draggable and append
+          const d = document.createElement('div');
+          d.className='draggable';
+          d.id='opt1_saved_'+q.qid;
+          d.draggable=true;
+          d.textContent = saved;
+          d.dataset.value = saved;
+          d.addEventListener('dragstart', e=> e.dataTransfer.setData('text/plain', d.id));
+          dt.appendChild(d);
+        }
+      }
+    }
+  });
+
+  // allow optionsDiv to accept drops (return)
+  optsDiv.addEventListener('dragover', e => e.preventDefault());
+  optsDiv.addEventListener('drop', async (e)=> {
+    e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain');
+    const el = document.getElementById(id);
+    if (!el) return;
+    const parentDrop = el.closest('.inline-drop, .drop-target');
+    if (parentDrop && parentDrop.dataset && parentDrop.dataset.qid) {
+      const qid = parentDrop.dataset.qid;
+      parentDrop.innerHTML = '';
+      await queueSave({ module:'reading', teil:1, qid: qid, answer: '' });
+    }
+    optsDiv.appendChild(el);
+  });
+}
+
+function renderReadingTeil2(){
+  const left = $id('leftPanel'), right = $id('rightPanel'); left.innerHTML=''; right.innerHTML='';
+  left.innerHTML = '<h3>Teil 2 — Passage</h3><p class="muted">Read the main passage text here.</p><div id="teil2_passage_box" class="passage-box"></div>';
+  const teil2Paragraph = state.paperQuestions.find(q => String(q.teil) === '2' && q.qtype === 'paragraph');
+  if (teil2Paragraph) {
+    const box = document.getElementById("teil2_passage_box");
+    if (box) box.innerText = teil2Paragraph.prompt;
+  }
+
+  const teil2Questions = state.paperQuestions.filter(q => String(q.teil) === '2' && q.qtype !== 'paragraph');
+  right.innerHTML = '<h4>Questions (MCQ)</h4>';
+  teil2Questions.forEach(q=>{
+    const wrap = document.createElement('div'); wrap.style.marginBottom='15px';
+    const qtxt = document.createElement('div'); qtxt.textContent = q.prompt||''; qtxt.style.fontWeight='600'; qtxt.style.marginBottom='5px';
+    wrap.appendChild(qtxt);
+    (q.options||[]).forEach(opt=>{
+      const label = document.createElement('label'); label.style.display='block'; label.style.padding='5px 0';
+      const r = document.createElement('input'); r.type='radio'; r.name='r2_'+q.qid; r.value=opt; r.style.marginRight='8px';
+      // if saved, mark checked
+      const saved = state.savedResponses[makeKey('reading',2,q.qid)];
+      if (saved && String(saved) === String(opt)) r.checked = true;
+      r.addEventListener('change', async ()=> await queueSave({ module:'reading', teil:2, qid: q.qid, answer: r.value }));
+      label.appendChild(r); label.appendChild(document.createTextNode(opt));
+      wrap.appendChild(label);
+    });
+    right.appendChild(wrap);
+  });
+}
+
+function renderReadingTeil3(){
+  const left = $id('leftPanel'), right = $id('rightPanel'); left.innerHTML=''; right.innerHTML='';
+  left.innerHTML = '<h3>Teil 3 — Short labeled texts</h3>';
+  const qs = questionsForTeil(3);
+
+  // Build options column for Teil 3
+  right.innerHTML = '<h4>Available Options</h4><div id="options3"></div>';
+  let options = [];
+  qs.forEach(q=>{ if (Array.isArray(q.options)) options = options.concat(q.options); });
+  if (options.length===0) for (let i=1;i<=10;i++) options.push('Option '+i);
+  options = Array.from(new Set(options));
+  const optsDiv = $id('options3');
+
+  options.forEach((opt, idx)=> {
+    const d = document.createElement('div'); d.className='draggable'; d.id='opt3_'+idx+'_'+Date.now(); d.draggable=true; d.textContent=opt; d.dataset.value=opt;
+    d.addEventListener('dragstart', e=> e.dataTransfer.setData('text/plain', d.id));
+    optsDiv.appendChild(d);
+  });
+
+  qs.forEach(q=>{
+    const wrapper = document.createElement('div'); wrapper.style.marginBottom='15px';
+    const promptText = q.prompt || '';
+    let titleHtml = '';
+    if (promptText.indexOf('___') >= 0) {
+      titleHtml = promptText.replace(/___/g, `<span class="inline-drop" id="drop3_${q.qid}" data-qid="${q.qid}" data-teil="3"></span>`);
+    } else {
+      titleHtml = `<span class="inline-drop" id="drop3_${q.qid}" data-qid="${q.qid}" data-teil="3"></span>${promptText}`;
+    }
+    const title = document.createElement('div'); title.innerHTML = titleHtml; title.style.fontWeight='600'; title.style.marginBottom='5px';
+    wrapper.appendChild(title); left.appendChild(wrapper);
+
+    const dt = title.querySelector('.inline-drop');
+    if (dt) {
+      dt.addEventListener('dragover', e=>e.preventDefault());
+      dt.addEventListener('drop', async (e)=> {
+        e.preventDefault();
+        const id = e.dataTransfer.getData('text/plain'); const el = document.getElementById(id);
+        if (!el) return;
+        if (dt.firstChild && dt.firstChild !== el) {
+          optsDiv.appendChild(dt.firstChild);
+        }
+        dt.innerHTML = ''; dt.appendChild(el);
+        await queueSave({ module:'reading', teil:3, qid: q.qid, answer: el.dataset.value || el.textContent });
+      });
+
+      // prefill if saved
+      const saved = state.savedResponses[makeKey('reading',3,q.qid)];
+      if (saved) {
+        const candidate = Array.from(optsDiv.children).find(ch => ch.dataset.value === saved || ch.textContent === saved);
+        if (candidate) dt.appendChild(candidate);
+        else {
+          const d = document.createElement('div'); d.className='draggable'; d.id='opt3_saved_'+q.qid; d.draggable=true; d.textContent=saved; d.dataset.value=saved;
+          d.addEventListener('dragstart', e=> e.dataTransfer.setData('text/plain', d.id)); dt.appendChild(d);
+        }
+      }
+    }
+  });
+
+  optsDiv.addEventListener('dragover', e=> e.preventDefault());
+  optsDiv.addEventListener('drop', async (e)=> {
+    e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain'); const el = document.getElementById(id);
+    if (!el) return;
+    const parentDrop = el.closest('.inline-drop, .drop-target');
+    if (parentDrop && parentDrop.dataset && parentDrop.dataset.qid) {
+      const qid = parentDrop.dataset.qid;
+      parentDrop.innerHTML = '';
+      await queueSave({ module:'reading', teil:3, qid: qid, answer: '' });
+    }
+    optsDiv.appendChild(el);
+  });
+}
+
+function renderReadingBlanks(teil){
+  const left = $id('leftPanel'), right = $id('rightPanel'); left.innerHTML=''; right.innerHTML='';
+  left.innerHTML = `<h3>Teil ${teil} — Grammar blanks</h3><p class="muted">Click on the [select] box to choose an option from the right panel.</p>`;
+  const qs = questionsForTeil(teil);
+  qs.forEach(q=>{
+    const p = document.createElement('p');
+    p.innerHTML = (q.prompt || '').replace('___','<span class="drop-target" data-qid="'+q.qid+'" data-teil="'+teil+'" style="cursor:pointer; display:inline-block; width:120px; text-align:center;">[select]</span>');
+    left.appendChild(p);
+  });
+  right.innerHTML = '<h4>Option Selector</h4><div id="blankOpts" class="muted">Click a blank on the left</div>';
+  left.querySelectorAll('.drop-target').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const qid = el.dataset.qid;
+      const q = qs.find(x=>x.qid===qid);
+      const container = $id('blankOpts'); container.innerHTML='<p class="muted">Select option for: <strong>'+qid+'</strong></p>';
+      (q.options||[]).forEach(opt=>{
+        const btn = document.createElement('button'); btn.style.display='block'; btn.textContent = opt; btn.style.marginBottom='8px';
+        btn.addEventListener('click', async ()=> { el.textContent = opt; await queueSave({ module:'reading', teil, qid, answer: opt }); });
+        container.appendChild(btn);
+      });
+      // show saved selection if present
+      const saved = state.savedResponses[makeKey('reading',teil,qid)];
+      if (saved) el.textContent = saved;
+    });
+  });
+}
+
+/* ============================
+   LISTENING (uses single audio file across teils)
+   ============================ */
+
+function playListeningAudio(audioUrl) {
+  const audio = $id('listeningAudioVisible');
+  if (!audio) return;
+  if (audioUrl && audio.src !== audioUrl) audio.src = audioUrl;
+  audio.load();
+  audio.play().catch(err => {
+    console.log('Autoplay blocked — user must press play', err);
+    // leave it to user to press the Play button
+  });
+}
+
+function startListeningModule() {
+  // ensure first listening teil displayed
+  renderListeningTeil(1);
+  if (CURRENT_AUDIO_URL) {
+    showAudioBar();
+    playListeningAudio(CURRENT_AUDIO_URL);
+  }
+}
+
+function renderListeningTeil(teilNo) {
+  const left = $id('leftPanel'), right = $id('rightPanel'); left.innerHTML=''; right.innerHTML='';
+  // hide right panel for full-width listening
+  if (right) right.style.display = 'none';
+  if (left) { left.style.width = '100%'; left.style.flex = 'none'; }
+
+  left.innerHTML = `<h3>Teil ${teilNo} — Listening</h3><p class="muted">Listen and answer the statements below.</p>`;
+  const qs = state.paperQuestions.filter(q => String(q.teil).toLowerCase() === ('listening_' + teilNo));
+  const listQs = qs.length ? qs : new Array(8).fill(0).map((_,i)=>({ qid: 'L' + teilNo + '_' + (i+1), prompt: 'Statement ' + (i+1) }));
+
+  const container = document.createElement('div'); container.id = 'listeningContainer'; container.className = 'listening-container';
+  left.appendChild(container);
+
+  listQs.forEach(q => {
+    const row = document.createElement('div'); row.className = 'listen-row'; row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center'; row.style.marginBottom='12px';
+    const qdiv = document.createElement('div'); qdiv.className = 'listen-question'; qdiv.textContent = q.prompt || '';
+    const opts = document.createElement('div'); opts.className = 'listen-options'; opts.style.width = '30%';
+
+    const btnW = document.createElement('button'); btnW.className = 'tf-option'; btnW.dataset.value = 'Richtig'; btnW.dataset.q = q.qid; btnW.textContent = 'Richtig';
+    const btnF = document.createElement('button'); btnF.className = 'tf-option'; btnF.dataset.value = 'Falsch'; btnF.dataset.q = q.qid; btnF.textContent = 'Falsch';
+
+    // preselect if saved
+    const saved = state.savedResponses[makeKey('listening',teilNo,q.qid)];
+    if (saved === 'Richtig') btnW.classList.add('selected');
+    if (saved === 'Falsch') btnF.classList.add('selected');
+
+    opts.appendChild(btnW); opts.appendChild(btnF);
+    row.appendChild(qdiv); row.appendChild(opts);
+    container.appendChild(row);
+  });
+
+  // selection logic with persistence
+  container.querySelectorAll('.tf-option').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const parent = this.parentNode;
+      parent.querySelectorAll('.tf-option').forEach(b => b.classList.remove('selected'));
+      this.classList.add('selected');
+      queueSave({ module:'listening', teil:teilNo, qid: this.dataset.q, answer: this.dataset.value });
+    });
+  });
+}
+
+/* ============================
+   WRITING
+   ============================ */
+let writingAutosaveTO = null;
+function renderWriting() {
+  const left = $id('leftPanel'), right = $id('rightPanel'); left.innerHTML=''; right.innerHTML='';
+  // ensure panels are visible and set proportions: right larger than left
+  if (right) { right.style.display = ''; right.style.flex = '1.6'; right.style.width = 'auto'; }
+  if (left) { left.style.flex = '0.9'; left.style.width = 'auto'; }
+
+  left.innerHTML = '<h3>Writing — Choose ONE task to complete</h3><p class="muted">Select one task on the left; the right side is your typing area. Only one task may be attempted.</p>';
+
+  // Get up to two writing tasks from the paper; if absent, provide two defaults
+  let qs = state.paperQuestions.filter(q => String(q.qtype) === 'writing' || String(q.teil) === 'writing');
+  if (!Array.isArray(qs)) qs = [];
+  // ensure two items
+  if (qs.length < 2) {
+    const defaults = [];
+    if (!qs[0]) defaults.push({ qid: 'A', prompt: 'Write an email to inform a colleague about a schedule change.' });
+    if (!qs[1]) defaults.push({ qid: 'B', prompt: 'Write a short complaint about a late delivery.' });
+    qs = qs.concat(defaults).slice(0,2);
+  } else {
+    qs = qs.slice(0,2);
+  }
+
+  // Build right panel (typing area) — make it larger and taller
+  right.innerHTML = '<h4>Your Response Area</h4>';
+  const ta = document.createElement('textarea'); ta.placeholder = 'Write your response here...'; ta.style.minHeight = '480px'; ta.style.width = '100%'; ta.style.fontSize = '1rem'; ta.style.lineHeight = '1.45';
+  const note = document.createElement('div'); note.className = 'saved'; note.textContent = 'Autosave: not saved';
+  right.appendChild(ta);
+
+  // Add German special-characters toolbar under textarea
+  const charBar = document.createElement('div'); charBar.style.display = 'flex'; charBar.style.flexWrap = 'wrap'; charBar.style.gap = '8px'; charBar.style.marginTop = '8px';
+  charBar.style.alignItems = 'center';
+  const chars = ['ä','ö','ü','Ä','Ö','Ü','ß'];
+  const charLabel = document.createElement('div'); charLabel.className = 'muted'; charLabel.textContent = 'German characters:'; charLabel.style.marginRight = '8px'; charBar.appendChild(charLabel);
+  function insertAtCursor(el, text) {
+    const start = el.selectionStart || 0;
+    const end = el.selectionEnd || 0;
+    const val = el.value || '';
+    el.value = val.slice(0, start) + text + val.slice(end);
+    // move cursor after inserted char
+    const pos = start + text.length;
+    el.selectionStart = el.selectionEnd = pos;
+    el.focus();
+  }
+  chars.forEach(c => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = c; b.style.padding = '6px 8px'; b.style.fontSize = '1.05rem'; b.style.backgroundColor = '#fff'; b.style.color = '#343a40'; b.style.border = '1px solid var(--border)'; b.style.borderRadius = '6px';
+    b.addEventListener('click', () => insertAtCursor(ta, c));
+    charBar.appendChild(b);
+  });
+  right.appendChild(charBar);
+  right.appendChild(note);
+
+  // Build left panel: two selectable tasks
+  qs.forEach((q, idx) => {
+    const block = document.createElement('div');
+    block.style.marginBottom = '12px';
+    block.style.padding = '12px';
+    block.style.border = '1px solid var(--border)';
+    block.style.borderRadius = '8px';
+    const title = document.createElement('div'); title.innerHTML = `<strong>Task ${idx+1} (${String(q.qid)})</strong>`; title.style.marginBottom = '8px';
+    const p = document.createElement('div'); p.textContent = q.prompt || '';
+    p.style.marginBottom = '10px';
+    const btn = document.createElement('button'); btn.textContent = 'Select this task'; btn.dataset.qid = q.qid; btn.style.backgroundColor = '#17a2b8';
+    btn.addEventListener('click', () => {
+      // visually mark selected
+      document.querySelectorAll('#leftPanel button').forEach(b => { b.style.backgroundColor = '#17a2b8'; });
+      btn.style.backgroundColor = '#007bff';
+      // set chosen writing task
+      state.chosenWriting = btn.dataset.qid;
+      // load saved text for this chosen task
+      const savedText = state.savedResponses[makeKey('writing','writing', state.chosenWriting)] || '';
+      ta.value = savedText;
+      note.textContent = 'Autosave: loaded';
+    });
+
+    block.appendChild(title); block.appendChild(p); block.appendChild(btn);
+    left.appendChild(block);
+  });
+
+  // ensure a selection exists
+  if (!state.chosenWriting) state.chosenWriting = qs[0].qid;
+  // mark the selected button if present
+  document.querySelectorAll('#leftPanel button').forEach(b => { if (b.dataset.qid === state.chosenWriting) b.style.backgroundColor = '#007bff'; });
+
+  // prefill textarea with saved response for the chosen task
+  const preSaved = state.savedResponses[makeKey('writing','writing', state.chosenWriting)] || '';
+  ta.value = preSaved;
+  if (preSaved) note.textContent = 'Autosave: loaded';
+
+  // autosave behavior (debounced)
+  ta.addEventListener('input', () => {
+    note.textContent = 'Autosave: saving...';
+    clearTimeout(writingAutosaveTO);
+    writingAutosaveTO = setTimeout(async () => {
+      const qid = state.chosenWriting || qs[0].qid;
+      await queueSave({ module: 'writing', teil: 'writing', qid: qid, answer: ta.value });
+      note.textContent = 'Autosave: saved';
+    }, 1200);
+  });
+}
+
+/* ============================
+   SUBMIT MODULE
+   ============================ */
+$id('btnSubmit').addEventListener('click', async () => {
+  if (!confirm('Are you sure you want to submit the current module?')) return;
+  const btn = $id('btnSubmit');
+  const orig = btn.textContent;
+  btn.textContent = 'Submitting...'; btn.disabled = true;
+
+  try {
+    await flushQueue();
+    const res = await api('module/submit', { email: state.email, module: state.currentModule, paper_id: state.assignedPaper });
+    btn.textContent = orig; btn.disabled = false;
+    if (res.ok) {
+      alert('Module submitted. ' + (res.score !== undefined ? `Score: ${res.score}/${res.total}` : 'Saved.'));
+      // reload saved responses (server might have recorded timestamps)
+      await refreshScores();
+      await loadSavedResponses();
+      showHome();
+    } else {
+      alert('Submit failed: ' + (res.error || 'unknown'));
+    }
+  } catch (e) {
+    btn.textContent = orig; btn.disabled = false;
+    alert('Submit error: ' + e);
+  }
+});
+
+/* ============================
+   REFRESH SCORES & UNLOCK UI
+   ============================ */
+async function refreshScores() {
+  try {
+    const res = await api('scores/get', { email: state.email, paper_id: state.assignedPaper });
+    if (!res.ok) { console.warn('scores/get failed', res.error); return; }
+
+    // Use returned flags if provided (old code expects properties)
+    if (res.reading_done) {
+      unlockModuleUI('box-listening');
+    } else {
+      lockModuleUI('box-listening');
+    }
+    if (res.listening_done) {
+      unlockModuleUI('box-writing');
+    } else {
+      lockModuleUI('box-writing');
+    }
+  } catch (e) { console.warn('scores fetch failed', e); }
+}
+
+function unlockModuleUI(boxId) {
+  const box = $id(boxId);
+  if (!box) return;
+  box.classList.remove('locked');
+  const btn = box.querySelector('button');
+  if (btn) { btn.disabled = false; btn.textContent = btn.textContent.replace(' (Locked)',''); }
+  const p = box.querySelector('p');
+  if (p) p.textContent = p.textContent.replace(' (Locked)', '');
+}
+function lockModuleUI(boxId) {
+  const box = $id(boxId);
+  if (!box) return;
+  box.classList.add('locked');
+  const btn = box.querySelector('button');
+  if (btn) { btn.disabled = true; if (!btn.textContent.includes('Start')) btn.textContent = 'Start ' + boxId.split('-')[1]; }
+  const p = box.querySelector('p');
+  if (p && !p.textContent.includes('(Locked)')) p.textContent = p.textContent + ' (Locked)';
+}
+
+/* ============================
+   AUDIO BAR helpers
+   ============================ */
+function setupAudioBar(url) {
+  CURRENT_AUDIO_URL = url || '';
+  const bar = $id('audioBar');
+  const audioEl = $id('listeningAudioVisible');
+  if (!CURRENT_AUDIO_URL) {
+    bar.classList.add('hidden');
+    audioEl.src = '';
+    return;
+  }
+  audioEl.src = CURRENT_AUDIO_URL;
+  // show it (will not autoplay unless user allows)
+  if (state.currentModule === 'listening') {
+    showAudioBar();
+    playListeningAudio(CURRENT_AUDIO_URL);
+  } else {
+    // only show after entering exam, else hide on home
+    if ($id('page-exam') && !$id('page-exam').classList.contains('hidden')) showAudioBar();
+  }
+}
+
+function showAudioBar() { $id('audioBar').classList.remove('hidden'); }
+function hideAudioBarIfNotNeeded() {
+  // hide audio bar when not in exam or no audio
+  if (!CURRENT_AUDIO_URL) $id('audioBar').classList.add('hidden');
+}
+
+/* audio control buttons */
+$id('audioPlayBtn').addEventListener('click', ()=> {
+  const a = $id('listeningAudioVisible'); a.play().catch(()=>{});
+});
+$id('audioPauseBtn').addEventListener('click', ()=> {
+  const a = $id('listeningAudioVisible'); a.pause();
+});
+
+/* ============================
+   INIT Demo Prefill
+   ============================ */
+(function init() {
+  if (DEMO) {
+    $id('email').value = 'demo@bsleu.test';
+    $id('password').value = 'demo';
+    $id('loginMsg').textContent = 'DEMO mode — no backend';
+  }
+})();
+
+(function(){
+  const SUB_CODE = 'SO1912IR';
+  const overlay = document.getElementById('subOverlay');
+  const closeBtn = document.getElementById('subCloseBtn');
+  const chooseBtns = overlay.querySelectorAll('.choosePlan');
+  const toast = document.getElementById('subToast');
+  const enterBtn = document.getElementById('enterSubCodeBtn');
+  const inlineEntry = document.getElementById('inlineCodeEntry');
+  const inlineInput = document.getElementById('inlineCodeInput');
+  const inlineVerify = document.getElementById('inlineVerifyBtn');
+
+  function show(){ overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden','false'); }
+  function hide(){ overlay.style.display = 'none'; overlay.setAttribute('aria-hidden','true'); }
+
+  closeBtn.addEventListener('click', hide);
+
+  chooseBtns.forEach(b => b.addEventListener('click', function(){
+    b.disabled = true; b.textContent = 'Requested';
+    toast.textContent = 'Access request sent to Sales. The subscription code is issued internally.'; toast.classList.add('show');
+    setTimeout(()=>{ toast.classList.remove('show'); b.disabled = false; b.textContent = 'Request Access'; }, 3000);
+    sessionStorage.setItem('sub_request_'+this.closest('.plan').dataset.plan || 'requested','1');
+  }));
+
+  enterBtn.addEventListener('click', ()=>{ inlineEntry.style.display = inlineEntry.style.display === 'flex' ? 'none' : 'flex'; inlineInput.focus(); });
+
+  inlineVerify.addEventListener('click', ()=>{
+    const v = inlineInput.value.trim();
+    if(v === SUB_CODE){ sessionStorage.setItem('sub_validated','1'); hide(); if(window.__subIntervalId){ clearInterval(window.__subIntervalId); window.__subIntervalId = null; } }
+    else { alert('Incorrect code'); inlineInput.focus(); }
+  });
+
+  function isValidated(){ return sessionStorage.getItem('sub_validated') === '1'; }
+  function startTimer(){
+    show();
+    if(window.__subIntervalId) clearInterval(window.__subIntervalId);
+    window.__subIntervalId = setInterval(function(){ if(!isValidated()) show(); }, 30*1000);
+  }
+
+  window.addEventListener('load', function(){ if(!isValidated()) { setTimeout(startTimer, 600); } });
+})();
+</script>
+</body>
+</html>
